@@ -147,9 +147,8 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
   import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-  // !!! REPLACE THIS WITH YOUR FIREBASE CONFIG !!!
   const firebaseConfig = {
-   apiKey: "AIzaSyDcVbjKBS4eaM5Kib305mRLFvSW2inhyUM",
+    apiKey: "AIzaSyDcVbjKBS4eaM5Kib305mRLFvSW2inhyUM",
     authDomain: "secret-translator-51569.firebaseapp.com",
     projectId: "secret-translator-51569",
     storageBucket: "secret-translator-51569.firebasestorage.app",
@@ -157,12 +156,10 @@
     appId: "1:1046705255609:web:33e5c0bec2fbf6b0611768"
   };
 
-  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const messagesRef = ref(db, 'messages');
 
-  // --- CRYPTO LOGIC (Same as before) ---
   const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   const IV_SIZE = 12;
   const SALT_SIZE = 16;
@@ -233,7 +230,8 @@
     const iv = crypto.getRandomValues(new Uint8Array(IV_SIZE));
     const salt = crypto.getRandomValues(new Uint8Array(SALT_SIZE));
     const key = await getKey(password, salt);
-    const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: AES-GCM", iv: iv, tagLength: 128 }, key, new TextEncoder().encode(text)));
+    // FIXED: Added missing quote before AES-GCM
+    const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv, tagLength: 128 }, key, new TextEncoder().encode(text)));
     const combined = new Uint8Array(SALT_SIZE + IV_SIZE + encrypted.length);
     combined.set(salt, 0); combined.set(iv, SALT_SIZE); combined.set(encrypted, SALT_SIZE + IV_SIZE);
     let bin = ""; for (const b of combined) bin += String.fromCharCode(b);
@@ -254,7 +252,6 @@
 
   // --- APP LOGIC ---
 
-  // CRITICAL: Attach functions to window so HTML onclick can see them
   window.sendMessage = async function() {
     const username = document.getElementById('username').value || "Anonymous";
     const pass = document.getElementById('pass-compose').value;
@@ -269,7 +266,6 @@
     statusEl.textContent = "Encrypting...";
     
     try {
-      // The Chain
       const base32 = encodeBase32(text);
       const hex = stringToHex(base32);
       const shifted = shiftEncrypt(hex);
@@ -294,6 +290,7 @@
     }
   };
 
+  // FIXED: Completed the function and closed it properly
   window.toggleDecrypt = async function(element, ciphertext) {
     const pass = prompt("Enter the shared password to decrypt:");
     if (!pass) return;
@@ -305,4 +302,32 @@
       const base32 = hexToString(hex);
       const plain = decodeBase32(base32);
       resultDiv.innerHTML = `<div class="msg-decrypted">${plain}</div>`;
-      resultDiv.classList.remove('hid
+      resultDiv.classList.remove('hidden');
+    } catch (e) {
+      alert("Decryption failed. Wrong password?");
+      console.error(e);
+    }
+  };
+
+  // ADDED: Listening for database additions and updating the UI
+  const inbox = document.getElementById('inbox-container');
+  onChildAdded(messagesRef, (snapshot) => {
+    const data = snapshot.val();
+    if (inbox.innerHTML.includes("Waiting for messages...")) {
+      inbox.innerHTML = "";
+    }
+    
+    const msgItem = document.createElement('div');
+    msgItem.className = 'msg-item';
+    msgItem.innerHTML = `
+      <div class="msg-meta">From: ${data.sender} | ${new Date(data.timestamp).toLocaleTimeString()}</div>
+      <div class="msg-cipher">${data.ciphertext}</div>
+      <div class="view-toggle" onclick="toggleDecrypt(this, '${data.ciphertext}')">Decrypt Message</div>
+      <div class="msg-result hidden"></div>
+    `;
+    inbox.appendChild(msgItem);
+    inbox.scrollTop = inbox.scrollHeight;
+  });
+</script>
+</body>
+</html>
