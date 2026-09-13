@@ -147,13 +147,15 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
   import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-  const firebaseConfig = {
+   const firebaseConfig = {
     apiKey: "AIzaSyDcVbjKBS4eaM5Kib305mRLFvSW2inhyUM",
     authDomain: "secret-translator-51569.firebaseapp.com",
     projectId: "secret-translator-51569",
     storageBucket: "secret-translator-51569.firebasestorage.app",
     messagingSenderId: "1046705255609",
-    appId: "1:1046705255609:web:33e5c0bec2fbf6b0611768"
+    appId: "1:1046705255609:web:33e5c0bec2fbf6b0611768",
+    // ADD THIS LINE:
+    databaseURL: "https://secret-translator-51569-default-rtdb.asia-southeast1.firebasedatabase.app"
   };
 
   const app = initializeApp(firebaseConfig);
