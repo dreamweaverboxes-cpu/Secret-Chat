@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Global Secret Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-color: #000000;
+    --text-color: #33ff33;
+    --border-color: #33ff33;
+    --dim-color: #1a7a1a;
+    --alert-bg: #1a0808;
+    --alert-text: #ff6666;
+  }
+
+  * { font-family: 'Roboto Mono', monospace; box-sizing: border-box; }
+  
+  body {
+    margin: 0;
+    padding: 20px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  h1 { font-size: 1.5rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+  .subtitle { font-size: 0.8rem; color: var(--dim-color); margin-bottom: 20px; }
+
+  .container {
+    width: 100%;
+    max-width: 800px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 700px) {
+    .container { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    border-radius: 6px;
+    background: rgba(0, 20, 0, 0.3);
+  }
+
+  h2 { font-size: 1rem; margin-top: 0; border-bottom: 1px dashed var(--dim-color); padding-bottom: 5px; }
+
+  label { display: block; margin-top: 10px; font-size: 0.8rem; color: var(--dim-color); }
+  
+  input, textarea {
+    width: 100%;
+    padding: 8px;
+    background: #000;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    margin-top: 5px;
+  }
+  
+  textarea { min-height: 80px; resize: vertical; }
+
+  button.action-btn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: #000;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  button.action-btn:hover { background: var(--dim-color); color: #000; }
+
+  .message-list {
+    margin-top: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--dim-color);
+    padding: 5px;
+  }
+
+  .msg-item {
+    padding: 8px;
+    border-bottom: 1px solid var(--dim-color);
+    font-size: 0.8rem;
+  }
+  .msg-item:last-child { border-bottom: none; }
+  .msg-meta { color: var(--dim-color); font-size: 0.7rem; margin-bottom: 4px; }
+  .msg-cipher { color: var(--dim-color); font-size: 0.75rem; word-break: break-all; }
+  .msg-decrypted { color: #fff; background: #003300; padding: 2px 4px; border-radius: 2px; }
+
+  .view-toggle {
+    margin-top: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-decoration: underline;
+    color: var(--dim-color);
+  }
+  .view-toggle:hover { color: var(--text-color); }
+
+  .hidden { display: none; }
+  .status { font-size: 0.7rem; color: var(--dim-color); margin-top: 5px; }
+</style>
+</head>
+<body>
+
+<h1>=== GLOBAL SECRET CHAT ===</h1>
+<div class="subtitle">Messages are encrypted before leaving your device.</div>
+
+<div class="container">
+  <!-- Left Panel: Compose -->
+  <div class="panel">
+    <h2>Send Message</h2>
+    <label>Your Nickname</label>
+    <input type="text" id="username" placeholder="e.g. Agent A" maxlength="15">
+    
+    <label>Shared Password (Must match receiver's)</label>
+    <input type="password" id="pass-compose" placeholder="Enter shared password">
+    
+    <label>Message</label>
+    <textarea id="msg-input" placeholder="Type secret message here..."></textarea>
+    
+    <button class="action-btn" onclick="sendMessage()">ENCRYPT & SEND</button>
+    <div id="send-status" class="status"></div>
+  </div>
+
+  <!-- Right Panel: Inbox -->
+  <div class="panel">
+    <h2>Live Inbox</h2>
+    <div id="inbox-container" class="message-list">
+      <div style="padding:10px; color:var(--dim-color); text-align:center;">Waiting for messages...</div>
+    </div>
+    <div class="status">Listening for new messages...</div>
+  </div>
+</div>
+
+<!-- FIREBASE SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+  // !!! REPLACE THIS WITH YOUR FIREBASE CONFIG !!!
+  const firebaseConfig = {
+   apiKey: "AIzaSyDcVbjKBS4eaM5Kib305mRLFvSW2inhyUM",
+    authDomain: "secret-translator-51569.firebaseapp.com",
+    projectId: "secret-translator-51569",
+    storageBucket: "secret-translator-51569.firebasestorage.app",
+    messagingSenderId: "1046705255609",
+    appId: "1:1046705255609:web:33e5c0bec2fbf6b0611768"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const messagesRef = ref(db, 'messages');
+
+  // --- CRYPTO LOGIC (Same as before) ---
+  const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  const IV_SIZE = 12;
+  const SALT_SIZE = 16;
+  const ITERATIONS = 65536;
+
+  function shiftEncrypt(text) {
+    let out = "", n = 1;
+    for (const c of text) {
+      if (/[a-zA-Z]/.test(c)) {
+        const base = c === c.toUpperCase() ? 65 : 97;
+        out += String.fromCharCode((c.charCodeAt(0) - base + n) % 26 + base);
+        n++;
+      } else out += c;
+    }
+    return out;
+  }
+
+  function shiftDecrypt(text) {
+    let out = "", n = 1;
+    for (const c of text) {
+      if (/[a-zA-Z]/.test(c)) {
+        const base = c === c.toUpperCase() ? 65 : 97;
+        out += String.fromCharCode((c.charCodeAt(0) - base - (n % 26) + 52) % 26 + base);
+        n++;
+      } else out += c;
+    }
+    return out;
+  }
+
+  function encodeBase32(text) {
+    let bin = "";
+    for (const c of text) bin += c.charCodeAt(0).toString(2).padStart(8, "0");
+    while (bin.length % 5 !== 0) bin += "0";
+    let out = "";
+    for (let i = 0; i < bin.length; i += 5) out += BASE32[parseInt(bin.substr(i, 5), 2)];
+    return out;
+  }
+
+  function decodeBase32(text) {
+    let bin = "";
+    for (const c of text) bin += BASE32.indexOf(c).toString(2).padStart(5, "0");
+    let out = "";
+    for (let i = 0; i + 8 <= bin.length; i += 8) out += String.fromCharCode(parseInt(bin.substr(i, 8), 2));
+    return out;
+  }
+
+  function stringToHex(text) {
+    let out = "";
+    for (const c of text) out += c.charCodeAt(0).toString(16).padStart(2, "0");
+    return out;
+  }
+
+  function hexToString(hex) {
+    let out = "";
+    for (let i = 0; i < hex.length; i += 2) out += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    return out;
+  }
+
+  async function getKey(password, salt) {
+    const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt: salt, iterations: ITERATIONS, hash: "SHA-256" },
+      keyMaterial, { name: "AES-GCM", length: 128 }, false, ["encrypt", "decrypt"]
+    );
+  }
+
+  async function aesEncrypt(text, password) {
+    const iv = crypto.getRandomValues(new Uint8Array(IV_SIZE));
+    const salt = crypto.getRandomValues(new Uint8Array(SALT_SIZE));
+    const key = await getKey(password, salt);
+    const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: AES-GCM", iv: iv, tagLength: 128 }, key, new TextEncoder().encode(text)));
+    const combined = new Uint8Array(SALT_SIZE + IV_SIZE + encrypted.length);
+    combined.set(salt, 0); combined.set(iv, SALT_SIZE); combined.set(encrypted, SALT_SIZE + IV_SIZE);
+    let bin = ""; for (const b of combined) bin += String.fromCharCode(b);
+    return btoa(bin);
+  }
+
+  async function aesDecrypt(base64, password) {
+    let bin = atob(base64);
+    const data = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) data[i] = bin.charCodeAt(i);
+    const salt = data.slice(0, SALT_SIZE);
+    const iv = data.slice(SALT_SIZE, SALT_SIZE + IV_SIZE);
+    const enc = data.slice(SALT_SIZE + IV_SIZE);
+    const key = await getKey(password, salt);
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv, tagLength: 128 }, key, enc);
+    return new TextDecoder().decode(plain);
+  }
+
+  // --- APP LOGIC ---
+
+  window.sendMessage = async function() {
+    const username = document.getElementById('username').value || "Anonymous";
+    const pass = document.getElementById('pass-compose').value;
+    const text = document.getElementById('msg-input').value;
+    const statusEl = document.getElementById('send-status');
+
+    if (!pass || !text) {
+      statusEl.textContent = "Error: Password and message required.";
+      return;
+    }
+
+    statusEl.textContent = "Encrypting...";
+    
+    try {
+      // The Chain
+      const base32 = encodeBase32(text);
+      const hex = stringToHex(base32);
+      const shifted = shiftEncrypt(hex);
+      const base64 = btoa(shifted);
+      const encrypted = await aesEncrypt(base64, pass);
+
+      // Push to Firebase
+      await push(messagesRef, {
+        sender: username,
+        ciphertext: encrypted,
+        timestamp: Date.now()
+      });
+
+      document.getElementById('msg-input').value = '';
+      statusEl.textContent = "Sent!";
+      setTimeout(() => statusEl.textContent = "", 2000);
+    } catch (e) {
+      statusEl.textContent = "Error: " + e.message;
+    }
+  };
+
+  // Listen for new messages
+  onChildAdded(messagesRef, (snapshot) => {
+    const msgData = snapshot.val();
+    appendMessage(msgData);
+  });
+
+  function appendMessage(msg) {
+    const container = document.getElementById('inbox-container');
+    
+    // Remove "No messages" if it exists
+    if (container.children[0] && container.children[0].textContent.includes("Waiting")) {
+      container.innerHTML = '';
+    }
+
+    const div = document.createElement('div');
+    div.className = 'msg-item';
+    
+    const date = new Date(msg.timestamp);
+    const timeStr = date.toLocaleTimeString();
+
+    div.innerHTML = `
+      <div class="msg-meta">From: ${msg.sender} | Time: ${timeStr}</div>
+      <div class="msg-cipher">Encrypted: ${msg.ciphertext.substring(0, 40)}...</div>
+      <div class="view-toggle" onclick="window.toggleDecrypt(this, '${msg.ciphertext}')">Click to Decrypt</div>
+      <div class="decrypted-content hidden" style="margin-top:5px;"></div>
+    `;
+    
+    // Prepend to show newest first
+    container.insertBefore(div, container.firstChild);
+  }
+
+  window.toggleDecrypt = async function(element, ciphertext) {
+    const pass = prompt("Enter the shared password to decrypt:");
+    if (!pass) return;
+
+    const resultDiv = element.nextElementSibling;
+    
+    try {
+      const base64 = await aesDecrypt(ciphertext, pass);
+      const shifted = atob(base64);
+      const hex = shiftDecrypt(shifted);
+      const base32 = hexToString(hex);
+      const plain = decodeBase32(base32);
+
+      resultDiv.innerHTML = `<div class="msg-decrypted">${plain}</div>`;
+      resultDiv.classList.remove('hidden');
+      element.textContent = "Decrypted (Hide)";
+    } catch (e) {
+      resultDiv.innerHTML = `<div style="color:var(--alert-text)">Failed: Wrong password or corrupted data.</div>`;
+      resultDiv.classList.remove('hidden');
+      element.textContent = "Try Again";
+    }
+  };
+</script>
+</body>
+</html>
