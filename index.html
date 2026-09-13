@@ -254,6 +254,7 @@
 
   // --- APP LOGIC ---
 
+  // CRITICAL: Attach functions to window so HTML onclick can see them
   window.sendMessage = async function() {
     const username = document.getElementById('username').value || "Anonymous";
     const pass = document.getElementById('pass-compose').value;
@@ -273,9 +274,11 @@
       const hex = stringToHex(base32);
       const shifted = shiftEncrypt(hex);
       const base64 = btoa(shifted);
+      
+      if (!db) throw new Error("Database not connected");
+
       const encrypted = await aesEncrypt(base64, pass);
 
-      // Push to Firebase
       await push(messagesRef, {
         sender: username,
         ciphertext: encrypted,
@@ -286,63 +289,20 @@
       statusEl.textContent = "Sent!";
       setTimeout(() => statusEl.textContent = "", 2000);
     } catch (e) {
+      console.error("Send Error:", e);
       statusEl.textContent = "Error: " + e.message;
     }
   };
 
-  // Listen for new messages
-  onChildAdded(messagesRef, (snapshot) => {
-    const msgData = snapshot.val();
-    appendMessage(msgData);
-  });
-
-  function appendMessage(msg) {
-    const container = document.getElementById('inbox-container');
-    
-    // Remove "No messages" if it exists
-    if (container.children[0] && container.children[0].textContent.includes("Waiting")) {
-      container.innerHTML = '';
-    }
-
-    const div = document.createElement('div');
-    div.className = 'msg-item';
-    
-    const date = new Date(msg.timestamp);
-    const timeStr = date.toLocaleTimeString();
-
-    div.innerHTML = `
-      <div class="msg-meta">From: ${msg.sender} | Time: ${timeStr}</div>
-      <div class="msg-cipher">Encrypted: ${msg.ciphertext.substring(0, 40)}...</div>
-      <div class="view-toggle" onclick="window.toggleDecrypt(this, '${msg.ciphertext}')">Click to Decrypt</div>
-      <div class="decrypted-content hidden" style="margin-top:5px;"></div>
-    `;
-    
-    // Prepend to show newest first
-    container.insertBefore(div, container.firstChild);
-  }
-
   window.toggleDecrypt = async function(element, ciphertext) {
     const pass = prompt("Enter the shared password to decrypt:");
     if (!pass) return;
-
     const resultDiv = element.nextElementSibling;
-    
     try {
       const base64 = await aesDecrypt(ciphertext, pass);
       const shifted = atob(base64);
       const hex = shiftDecrypt(shifted);
       const base32 = hexToString(hex);
       const plain = decodeBase32(base32);
-
       resultDiv.innerHTML = `<div class="msg-decrypted">${plain}</div>`;
-      resultDiv.classList.remove('hidden');
-      element.textContent = "Decrypted (Hide)";
-    } catch (e) {
-      resultDiv.innerHTML = `<div style="color:var(--alert-text)">Failed: Wrong password or corrupted data.</div>`;
-      resultDiv.classList.remove('hidden');
-      element.textContent = "Try Again";
-    }
-  };
-</script>
-</body>
-</html>
+      resultDiv.classList.remove('hid
