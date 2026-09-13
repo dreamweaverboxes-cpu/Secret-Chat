@@ -6,103 +6,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg-color: #000000;
-    --text-color: #33ff33;
-    --border-color: #33ff33;
-    --dim-color: #1a7a1a;
-    --alert-bg: #1a0808;
-    --alert-text: #ff6666;
-  }
-
+  :root { --bg-color: #000; --text-color: #33ff33; --border-color: #33ff33; --dim-color: #1a7a1a; --alert-text: #ff6666; }
   * { font-family: 'Roboto Mono', monospace; box-sizing: border-box; }
-  
-  body {
-    margin: 0;
-    padding: 20px;
-    background: var(--bg-color);
-    color: var(--text-color);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-  }
-
-  h1 { font-size: 1.5rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
-  .subtitle { font-size: 0.8rem; color: var(--dim-color); margin-bottom: 20px; }
-
-  .container {
-    width: 100%;
-    max-width: 800px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-
-  #unlock-screen {
-    width: 100%;
-    max-width: 400px;
-    margin-top: 50px;
-  }
-
-  @media (max-width: 700px) {
-    .container { grid-template-columns: 1fr; }
-  }
-
-  .panel {
-    border: 1px solid var(--border-color);
-    padding: 15px;
-    border-radius: 6px;
-    background: rgba(0, 20, 0, 0.3);
-  }
-
-  h2 { font-size: 1rem; margin-top: 0; border-bottom: 1px dashed var(--dim-color); padding-bottom: 5px; }
-
+  body { margin: 0; padding: 20px; background: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+  h1 { font-size: 1.5rem; letter-spacing: 2px; }
+  .container { width: 100%; max-width: 800px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  #unlock-screen { width: 100%; max-width: 400px; margin-top: 50px; }
+  @media (max-width: 700px) { .container { grid-template-columns: 1fr; } }
+  .panel { border: 1px solid var(--border-color); padding: 15px; border-radius: 6px; background: rgba(0, 20, 0, 0.3); }
   label { display: block; margin-top: 10px; font-size: 0.8rem; color: var(--dim-color); }
-  
-  input, textarea {
-    width: 100%;
-    padding: 8px;
-    background: #000;
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-family: inherit;
-    margin-top: 5px;
-  }
-  
-  textarea { min-height: 80px; resize: vertical; }
-
-  button.action-btn {
-    margin-top: 10px;
-    padding: 8px 16px;
-    background: #000;
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s;
-  }
+  input, textarea { width: 100%; padding: 8px; background: #000; color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; margin-top: 5px; }
+  button.action-btn { margin-top: 10px; padding: 8px 16px; background: #000; border: 1px solid var(--border-color); color: var(--text-color); cursor: pointer; }
   button.action-btn:hover { background: var(--dim-color); color: #000; }
-
-  .message-list {
-    margin-top: 10px;
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid var(--dim-color);
-    padding: 5px;
-  }
-
-  .msg-item {
-    padding: 8px;
-    border-bottom: 1px solid var(--dim-color);
-    font-size: 0.8rem;
-  }
-  .msg-item:last-child { border-bottom: none; }
+  .message-list { margin-top: 10px; max-height: 300px; overflow-y: auto; border: 1px solid var(--dim-color); padding: 5px; }
+  .msg-item { padding: 8px; border-bottom: 1px solid var(--dim-color); font-size: 0.8rem; }
   .msg-meta { color: var(--dim-color); font-size: 0.7rem; margin-bottom: 4px; }
-  .msg-cipher { color: var(--dim-color); font-size: 0.75rem; word-break: break-all; opacity: 0.5; }
   .msg-decrypted { color: #fff; background: #003300; padding: 6px; border-radius: 4px; margin-top: 5px; }
-
   .hidden { display: none !important; }
   .status { font-size: 0.7rem; color: var(--dim-color); margin-top: 5px; }
 </style>
@@ -110,55 +29,40 @@
 <body>
 
 <h1>=== GLOBAL SECRET CHAT ===</h1>
-<div class="subtitle">Messages are encrypted before leaving your device.</div>
 
-<!-- 1. LOCK SCREEN / ACCESS SYSTEM -->
 <div id="unlock-screen" class="panel">
-  <h2>ACCESS AUTHORIZATION REQUIRED</h2>
+  <h2>ACCESS REQUIRED</h2>
   <label>Enter Room Passkey</label>
   <input type="password" id="room-passkey" placeholder="Enter room decryption password...">
   <button class="action-btn" onclick="authorizeRoom()">DECRYPT & ENTER</button>
   <div id="unlock-status" class="status" style="color: var(--alert-text);"></div>
 </div>
 
-<!-- 2. MAIN CHAT SYSTEM (Hidden until authorized) -->
 <div id="chat-app" class="container hidden">
-  <!-- Left Panel: Compose -->
   <div class="panel">
     <h2>Send Message</h2>
-    <label>Your Nickname</label>
-    <input type="text" id="username" placeholder="e.g. Agent A" maxlength="15">
-    
-    <label>Message</label>
-    <textarea id="msg-input" placeholder="Type secret message here..."></textarea>
-    
+    <label>Nickname</label>
+    <input type="text" id="username" placeholder="Agent A" maxlength="15">
+    <label>Message (Type @ to Whisper)</label>
+    <textarea id="msg-input" placeholder="Type here..."></textarea>
     <button class="action-btn" onclick="sendMessage()">ENCRYPT & SEND</button>
     <div id="send-status" class="status"></div>
   </div>
-
-  <!-- Right Panel: Inbox -->
   <div class="panel">
     <h2>Live Inbox</h2>
-    <div id="inbox-container" class="message-list">
-      <div style="padding:10px; color:var(--dim-color); text-align:center;">Waiting for messages...</div>
-    </div>
-    <div class="status">Listening for new messages...</div>
+    <div id="inbox-container" class="message-list">Waiting for messages...</div>
   </div>
 </div>
 
-<!-- FIREBASE SDKs -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-  import { getDatabase, ref, push, onChildAdded, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+  import { getDatabase, ref, push, onChildAdded, set, remove, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDcVbjKBS4eaM5Kib305mRLFvSW2inhyUM",
     authDomain: "secret-translator-51569.firebaseapp.com",
     projectId: "secret-translator-51569",
-    storageBucket: "secret-translator-51569.firebasestorage.app",
-    messagingSenderId: "1046705255609",
-    appId: "1:1046705255609:web:33e5c0bec2fbf6b0611768",
     databaseURL: "https://secret-translator-51569-default-rtdb.asia-southeast1.firebasedatabase.app"
   };
 
@@ -166,198 +70,149 @@
   const auth = getAuth(app);
   const db = getDatabase(app);
 
-  const messagesRef = ref(db, 'rooms/room1/messages');
-  let sessionPasskey = ""; 
-  let myUid = "";
+  let sessionPasskey = "", myUid = "", sessionTimeout = null, selectedRecipientUid = null;
 
+  // --- CRYPTO ---
   const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-  const IV_SIZE = 12;
-  const SALT_SIZE = 16;
-  const ITERATIONS = 65536;
+  const encB32 = t => {
+    let b = ""; for (let c of t) b += c.charCodeAt(0).toString(2).padStart(8, "0");
+    while (b.length % 5 !== 0) b += "0";
+    let o = ""; for (let i = 0; i < b.length; i += 5) o += BASE32[parseInt(b.substr(i, 5), 2)];
+    return o;
+  };
+  const decB32 = t => {
+    let b = ""; for (let c of t) b += BASE32.indexOf(c).toString(2).padStart(5, "0");
+    let o = ""; for (let i = 0; i + 8 <= b.length; i += 8) o += String.fromCharCode(parseInt(b.substr(i, 8), 2));
+    return o;
+  };
+  const shf = (t, d) => [...t].map((c, i) => {
+    if (/[a-zA-Z]/.test(c)) {
+      let b = c === c.toUpperCase() ? 65 : 97;
+      return String.fromCharCode((c.charCodeAt(0) - b + (d * (i + 1)) % 26 + 52) % 26 + b);
+    } return c;
+  }).join("");
 
-  // --- CRYPTO UTILITIES ---
-
-  function shiftEncrypt(text) {
-    let out = "", n = 1;
-    for (const c of text) {
-      if (/[a-zA-Z]/.test(c)) {
-        const base = c === c.toUpperCase() ? 65 : 97;
-        out += String.fromCharCode((c.charCodeAt(0) - base + n) % 26 + base);
-        n++;
-      } else out += c;
-    }
-    return out;
+  async function getK(pw, s) {
+    let m = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({ name: "PBKDF2", salt: s, iterations: 1000, hash: "SHA-256" }, m, { name: "AES-GCM", length: 128 }, false, ["encrypt", "decrypt"]);
+  }
+  async function aesEnc(t, pw) {
+    let iv = crypto.getRandomValues(new Uint8Array(12)), salt = crypto.getRandomValues(new Uint8Array(16));
+    let key = await getK(pw, salt), ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv, tagLength: 128 }, key, new TextEncoder().encode(t)));
+    let comb = new Uint8Array(28 + ct.length); comb.set(salt, 0); comb.set(iv, 16); comb.set(ct, 28);
+    return btoa(String.fromCharCode(...comb));
+  }
+  async function aesDec(b64, pw) {
+    let u = new Uint8Array([...atob(b64)].map(c => c.charCodeAt(0)));
+    let key = await getK(pw, u.slice(0, 16));
+    return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(16, 28), tagLength: 128 }, key, u.slice(28)));
   }
 
-  function shiftDecrypt(text) {
-    let out = "", n = 1;
-    for (const c of text) {
-      if (/[a-zA-Z]/.test(c)) {
-        const base = c === c.toUpperCase() ? 65 : 97;
-        out += String.fromCharCode((c.charCodeAt(0) - base - (n % 26) + 52) % 26 + base);
-        n++;
-      } else out += c;
-    }
-    return out;
-  }
-
-  function encodeBase32(text) {
-    let bin = "";
-    for (const c of text) bin += c.charCodeAt(0).toString(2).padStart(8, "0");
-    while (bin.length % 5 !== 0) bin += "0";
-    let out = "";
-    for (let i = 0; i < bin.length; i += 5) out += BASE32[parseInt(bin.substr(i, 5), 2)];
-    return out;
-  }
-
-  function decodeBase32(text) {
-    let bin = "";
-    for (const c of text) bin += BASE32.indexOf(c).toString(2).padStart(5, "0");
-    let out = "";
-    for (let i = 0; i + 8 <= bin.length; i += 8) out += String.fromCharCode(parseInt(bin.substr(i, 8), 2));
-    return out;
-  }
-
-  function stringToHex(text) {
-    let out = "";
-    for (const c of text) out += c.charCodeAt(0).toString(16).padStart(2, "0");
-    return out;
-  }
-
-  function hexToString(hex) {
-    let out = "";
-    for (let i = 0; i < hex.length; i += 2) out += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-    return out;
-  }
-
-  async function getKey(password, salt) {
-    const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
-    return crypto.subtle.deriveKey(
-      { name: "PBKDF2", salt: salt, iterations: ITERATIONS, hash: "SHA-256" },
-      keyMaterial, { name: "AES-GCM", length: 128 }, false, ["encrypt", "decrypt"]
-    );
-  }
-
-  async function aesEncrypt(text, password) {
-    const iv = crypto.getRandomValues(new Uint8Array(IV_SIZE));
-    const salt = crypto.getRandomValues(new Uint8Array(SALT_SIZE));
-    const key = await getKey(password, salt);
-    const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv, tagLength: 128 }, key, new TextEncoder().encode(text)));
-    const combined = new Uint8Array(SALT_SIZE + IV_SIZE + encrypted.length);
-    combined.set(salt, 0); combined.set(iv, SALT_SIZE); combined.set(encrypted, SALT_SIZE + IV_SIZE);
-    let bin = ""; for (const b of combined) bin += String.fromCharCode(b);
-    return btoa(bin);
-  }
-
-  async function aesDecrypt(base64, password) {
-    let bin = atob(base64);
-    const data = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) data[i] = bin.charCodeAt(i);
-    const salt = data.slice(0, SALT_SIZE);
-    const iv = data.slice(SALT_SIZE, SALT_SIZE + IV_SIZE);
-    const enc = data.slice(SALT_SIZE + IV_SIZE);
-    const key = await getKey(password, salt);
-    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv, tagLength: 128 }, key, enc);
-    return new TextDecoder().decode(plain);
-  }
-
-  // --- ACCESS AND AUTH LOGIC ---
-
+  // --- AUTH & TIMEOUT ---
   window.authorizeRoom = async function() {
-    const passkey = document.getElementById('room-passkey').value;
+    const pk = document.getElementById('room-passkey').value;
     const statusEl = document.getElementById('unlock-status');
-    statusEl.textContent = "Connecting securely...";
+    statusEl.textContent = "Connecting...";
 
     try {
-      // 1. Authenticate anonymously
-      const userCredential = await signInAnonymously(auth);
-      myUid = userCredential.user.uid;
+      myUid = (await signInAnonymously(auth)).user.uid;
+      await set(ref(db, `rooms/room1/passkeys/${myUid}`), pk);
+      sessionPasskey = pk;
 
-      // 2. Register passkey session (Database checks against rules!)
-      await set(ref(db, `rooms/room1/passkeys/${myUid}`), passkey);
+      const user = document.getElementById('username').value || "Agent_" + myUid.slice(0, 4);
+      await set(ref(db, `rooms/room1/users/${myUid}`), user);
 
-      // 3. Success! Store passkey in local session and transition screens
-      sessionPasskey = passkey;
       document.getElementById('unlock-screen').classList.add('hidden');
       document.getElementById('chat-app').classList.remove('hidden');
 
-      // Start listening to messages
-      initMessageListener();
-    } catch (e) {
-      console.error(e);
-      statusEl.textContent = "Access Denied. Incorrect Room Passkey.";
-    }
+      startSessionTimer();
+      initMessageListeners();
+      setupWhisperPopup();
+    } catch (e) { statusEl.textContent = "Access Denied. Invalid Passkey."; }
   };
 
-  // --- APP LOGIC ---
+  function startSessionTimer() {
+    clearTimeout(sessionTimeout);
+    sessionTimeout = setTimeout(async () => {
+      await remove(ref(db, `rooms/room1/passkeys/${myUid}`));
+      await remove(ref(db, `rooms/room1/users/${myUid}`));
+      document.getElementById('room-passkey').value = "";
+      document.getElementById('chat-app').classList.add('hidden');
+      document.getElementById('unlock-screen').classList.remove('hidden');
+      alert("Session expired. Please enter passkey again.");
+    }, 300000); // 5 mins [1]
+  }
+
+  // --- WHISPER & CHAT ---
+  function setupWhisperPopup() {
+    document.getElementById('msg-input').addEventListener('input', (e) => {
+      if (e.target.value.endsWith('@')) {
+        onValue(ref(db, 'rooms/room1/users'), (snapshot) => {
+          let html = `<div id="wp" style="background:#000; border:1px solid #3f3; position:absolute; padding:10px; border-radius:4px; z-index:10;">Select:<br>`;
+          Object.entries(snapshot.val() || {}).forEach(([uid, name]) => {
+            if (uid !== myUid) html += `<button style="display:block; color:#3f3; background:none; border:none; cursor:pointer;" onclick="selW('${uid}','${name}')">${name}</button>`;
+          });
+          html += `<button onclick="document.getElementById('wp').remove()" style="color:#f66; background:none; border:none; cursor:pointer;">X</button></div>`;
+          document.body.insertAdjacentHTML('beforeend', html);
+        }, { onlyOnce: true });
+      }
+    });
+  }
+
+  window.selW = function(uid, name) {
+    selectedRecipientUid = uid;
+    const input = document.getElementById('msg-input');
+    input.value = input.value.slice(0, -1) + `[Whisper to ${name}]: `;
+    document.getElementById('wp')?.remove();
+  };
 
   window.sendMessage = async function() {
-    const username = document.getElementById('username').value || "Anonymous";
+    const user = document.getElementById('username').value || "Anonymous";
     const text = document.getElementById('msg-input').value;
-    const statusEl = document.getElementById('send-status');
+    if (!text) return;
 
-    if (!text) {
-      statusEl.textContent = "Error: Message required.";
-      return;
-    }
-
-    statusEl.textContent = "Encrypting...";
-    
     try {
-      const base32 = encodeBase32(text);
-      const hex = stringToHex(base32);
-      const shifted = shiftEncrypt(hex);
-      const base64 = btoa(shifted);
+      const b64 = await aesEnc(btoa(shf([...encB32(text)].map(c => c.charCodeAt(0).toString(16).padStart(2, "0")).join(""), 1)), sessionPasskey);
+      const path = selectedRecipientUid ? `rooms/room1/private_messages/${selectedRecipientUid}` : 'rooms/room1/messages';
       
-      const encrypted = await aesEncrypt(base64, sessionPasskey);
-
-      await push(messagesRef, {
-        sender: username,
-        ciphertext: encrypted,
+      await push(ref(db, path), {
+        sender: user + (selectedRecipientUid ? " (Whisper)" : ""),
+        ciphertext: b64,
         timestamp: Date.now()
       });
 
       document.getElementById('msg-input').value = '';
-      statusEl.textContent = "Sent!";
-      setTimeout(() => statusEl.textContent = "", 2000);
-    } catch (e) {
-      console.error("Send Error:", e);
-      statusEl.textContent = "Error: " + e.message;
-    }
+      selectedRecipientUid = null;
+      startSessionTimer(); // Keep active session alive on send [1]
+    } catch (e) { alert("Failed to send: " + e.message); }
   };
 
-  // Real-time listener that decrypts automatically
-  function initMessageListener() {
+  function initMessageListeners() {
     const inbox = document.getElementById('inbox-container');
-    
-    onChildAdded(messagesRef, async (snapshot) => {
-      const data = snapshot.val();
-      if (inbox.innerHTML.includes("Waiting for messages...")) {
-        inbox.innerHTML = "";
-      }
+    const handleMsg = async (snapshot) => {
+      const d = snapshot.val();
+      if (inbox.innerHTML.includes("Waiting for messages")) inbox.innerHTML = "";
       
-      let plainMessage = "Unable to decrypt message.";
+      let msg = "Unable to decrypt message.";
       try {
-        const base64 = await aesDecrypt(data.ciphertext, sessionPasskey);
-        const shifted = atob(base64);
-        const hex = shiftDecrypt(shifted);
-        const base32 = hexToString(hex);
-        plainMessage = decodeBase32(base32);
-      } catch (e) {
-        console.error("Auto-decryption failed", e);
-      }
+        let hex = shf(atob(await aesDec(d.ciphertext, sessionPasskey)), -1);
+        let b32 = ""; for (let i = 0; i < hex.length; i += 2) b32 += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+        msg = decB32(b32);
+      } catch (e) {}
 
-      const msgItem = document.createElement('div');
-      msgItem.className = 'msg-item';
-      msgItem.innerHTML = `
-        <div class="msg-meta">From: ${data.sender} | ${new Date(data.timestamp).toLocaleTimeString()}</div>
-        <div class="msg-cipher">${data.ciphertext}</div>
-        <div class="msg-decrypted">${plainMessage}</div>
-      `;
-      inbox.appendChild(msgItem);
+      inbox.insertAdjacentHTML('beforeend', `
+        <div class="msg-item">
+          <div class="msg-meta">From: ${d.sender} | ${new Date(d.timestamp).toLocaleTimeString()}</div>
+          <div class="msg-decrypted">${msg}</div>
+        </div>
+      `);
       inbox.scrollTop = inbox.scrollHeight;
-    });
+    };
+
+    onChildAdded(ref(db, 'rooms/room1/messages'), handleMsg);
+    onChildAdded(ref(db, `rooms/room1/private_messages/${myUid}`), handleMsg);
   }
 </script>
 </body>
 </html>
+
